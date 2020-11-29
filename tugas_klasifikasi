@@ -1,0 +1,90 @@
+import numpy as np
+import pandas as pd
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+from sklearn import linear_model
+from sklearn.linear_model import LogisticRegression
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.svm import SVC, LinearSVC
+
+df = pd.read_csv('Data MBA/Titanic.csv')
+df.head()
+
+df.info()
+
+df.drop(['Cabin','Name','Ticket'], axis=1, inplace=True)
+df.head()
+
+val = df.Embarked.mode()[0]
+df['Embarked'] = df.Embarked.fillna(val)
+
+val = df.Age.mean()
+df['Age'] = df.Age.fillna(0)
+
+df.info()
+
+df.Sex = df.Sex.map({'male':0, 'female':1})
+df.Embarked = df.Embarked.map({'S':0, 'C':1, 'Q':2})
+df.info()
+
+df.head()
+
+feature = ['Pclass','Sex','Age','SibSp', 'Parch','Fare', 'Embarked']
+x = df.loc[:, feature].values
+y = df.loc[:, 'Survived'].values
+
+from sklearn.preprocessing import StandardScaler
+SC = StandardScaler()
+x_scal = SC.fit_transform(x)
+
+from sklearn.model_selection import train_test_split
+X_train, X_test, y_train, y_test = train_test_split(x_scal, y, test_size=0.3, random_state=142)
+
+LR = LogisticRegression(max_iter = 1000)
+LR.fit(X_train,y_train)
+
+LR.predict_proba(X_test)
+
+y_pred = LR.predict_proba(X_train)
+y_pred = pd.DataFrame({'y_proba':LR.predict_proba(X_train)[:,1],'class_pred':LR.predict(X_train),'class_true':y_train})
+bin = [0, 0.25, 0.5, 0.75, 1]
+
+y_pred['group']=pd.cut(y_pred.y_proba,bins = bin)
+temp = pd.pivot_table(y_pred,index='group',aggfunc='sum',values=['class_pred','class_true'])
+temp
+
+RF = RandomForestClassifier(n_estimators= 1000)
+RF.fit(X_train,y_train)
+
+y_pred = LR.predict_proba(X_train)
+y_pred = pd.DataFrame({'y_proba':RF.predict_proba(X_test)[:,1],'class_pred':RF.predict(X_test),'class_true':y_test})
+bin = [0, 0.25, 0.5, 0.75, 1]
+
+y_pred['group']=pd.cut(y_pred.y_proba,bins = bin)
+temp_ = pd.pivot_table(y_pred,index='group',aggfunc='sum',values=['class_pred','class_true'])
+temp_
+
+SV = SVC(C=0.1, probability=True)
+SV.fit(X_train,y_train)
+
+y_pred = SV.predict_proba(X_train)
+y_pred = pd.DataFrame({'y_proba':SV.predict_proba(X_train)[:,1],'class_pred':SV.predict(X_train),'class_true':y_train})
+bin = [0, 0.25, 0.5, 0.75, 1]
+
+y_pred['group']=pd.cut(y_pred.y_proba,bins = bin)
+temp = pd.pivot_table(y_pred,index='group',aggfunc='sum',values=['class_pred','class_true'])
+temp
+
+DT = DecisionTreeClassifier(max_features = 7)
+DT.fit(X_train,y_train)
+
+y_pred = DT.predict_proba(X_train)
+y_pred = pd.DataFrame({'y_proba':DT.predict_proba(X_test)[:,1],'class_pred':DT.predict(X_test),'class_true':y_test})
+bin = [0, 0.25, 0.5, 0.75, 1]
+
+y_pred['group']=pd.cut(y_pred.y_proba,bins = bin)
+temp = pd.pivot_table(y_pred,index='group',aggfunc='sum',values=['class_pred','class_true'])
+temp
